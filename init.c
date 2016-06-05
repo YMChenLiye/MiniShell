@@ -20,6 +20,8 @@ void sigint_handler(int signo)
 
 void init(void)
 {
-	memset(&cmd,0,sizeof(cmd));
+	memset(cmd,0,sizeof(cmd));
 	memset(&cmdline,0,sizeof(cmdline));
+	lineptr = cmdline;
+	avptr = avline;
 }

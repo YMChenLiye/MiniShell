@@ -7,6 +7,10 @@
 #include <sys/wait.h>
 
 
+void get_command(int i);
+int check(const char* str);
+void getname(char* name);
+
 //shell主循环
 void shell_loop(void)
 {
@@ -37,28 +41,39 @@ int read_command(void)
 //成功返回解析到的命令个数，失败返回-1
 int parse_command(void)
 {
-	char *cp = cmdline;
-	char *avp = avline;
-	int i = 0;
-	while(*cp != '\0'){
-		//去除空格
-		while(*cp == ' ' || *cp == '\t'){
-			cp++;
-		}
-		//如果到了行尾，跳出循环
-		if(*cp == '\0' || *cp == '\n'){
+	//cat < test.txt | grep -n public > test2.txt &
+	//1、解析第一条简单命令
+	get_command(0);
+	//2、判断是否有输入重定向符
+	if(check("<")){
+		getname(infile);
+	}
+	//3、判断是否有管道
+	int i;
+	for(i = 1; i<PIPELINE;++i){
+		if(check("|")){
+			get_command(i);
+		}else {
 			break;
 		}
-		cmd.args[i] = avp;
-
-		//解析参数
-		while(*cp != '\0' && *cp != ' ' && *cp != '\t' && *cp != '\n'){
-			*avp++ = *cp++;
-		}
-		*avp++ = '\0';
-		printf("[%s]\n",cmd.args[i]);
-		i++;
 	}
+	//4、判断是否有输出重定向符
+	if(check(">")){
+		getname(outfile);
+	}
+	//5、判断是否后台作业
+	if(check("&")){
+		backgnd = 1;
+	}
+	//6、判断命令结束 '\n'
+	if(check("\n")){
+		cmd_count = i;
+		return cmd_count;
+	}else {
+		fprintf(stderr,"Command line syntax error\n");
+		return -1;
+	}
+
 	return 0;
 
 }
@@ -67,6 +82,7 @@ int parse_command(void)
 //成功返回0，失败返回-1
 int execute_command(void)
 {
+	/*
 	pid_t pid = fork();
 	if(pid == -1){
 		ERR_EXIT("fork");
@@ -79,6 +95,59 @@ int execute_command(void)
 	}
 
 	wait(NULL);
+	*/
 	return 0;
+
+}
+
+//解析简单命令至cmd[i]
+//提取cmdline中的命令参数到avline数组中，
+//并且将COMMAND结构中的args[]中的每个指针指向这些字符串
+void get_command(int i)
+{
+	int j = 0;
+	int inword;
+	while(*lineptr != '\0'){
+		//去除空格
+		while(*lineptr == ' ' || *lineptr == '\t'){
+			*lineptr++;
+		}
+		cmd[i].args[j] = avptr;
+		while(*lineptr != '\0' && *lineptr != ' ' && *lineptr != '\t'
+				&& *lineptr != '>' && *lineptr != '<' && *lineptr != '|'
+				&& *lineptr != '&' && *lineptr != '\n'){
+			*avptr++ = *lineptr++;
+			inword = 1;
+		}
+		*avptr++ = '\0';
+		
+		switch(*lineptr){
+			case ' ':
+			case '\t':
+				inword = 0;
+				j++;
+				break;
+			case '<':
+			case '>':
+			case '|':
+			case '&':
+			case '\n':
+				if(inword == 0){
+					cmd[i].args[j] = NULL;
+				}
+				return ;
+			default:	//for '\0'
+				return;
+		}
+	}
+
+}
+int check(const char* str)
+{
+
+}
+
+void getname(char* name)
+{
 
 }

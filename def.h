@@ -20,6 +20,8 @@
 typedef struct command
 {
 	char *args[MAXARG];		//解析出的命令参数列表
+	int infd;
+	int outfd;
 } COMMAND;
 	
 #endif
