@@ -36,4 +36,6 @@ void init(void)
 	backgnd = 0;
 	append = 0;
 	lastpid = 0;
+	printf("[MiniShell]$ ");
+	fflush(stdout);
 }

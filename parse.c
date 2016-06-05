@@ -1,30 +1,33 @@
 #include "parse.h"
-#include <stdio.h>
-#include "init.h"
 #include "externs.h"
+#include "init.h"
+#include "execute.h"
+#include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#include <fcntl.h>
 
 void get_command(int i);
 int check(const char* str);
 void getname(char* name);
 void print_command(void);
-void forkexec(COMMAND* pcmd);
 
 //shell主循环
 void shell_loop(void)
 {
 	while(1){
-		printf("[MiniShell]$ ");
-		fflush(stdout);
+		//初始化环境
 		init();
+		//读取命令
 		if(read_command() == -1){
 			break;
 		}
+		//解析命令
 		parse_command();
+		//打印命令的状态,debug用的
 		print_command();
+		//执行命令
 		execute_command();
 	}
 	printf("\nexit\n");
@@ -34,6 +37,7 @@ void shell_loop(void)
 //成功返回0，失败或者读取到文件结束符(EOF)返回-1
 int read_command(void)
 {
+	//按行读取命令，cmdline中包含\n字符
 	if(fgets(cmdline,MAXLINE,stdin) == NULL){
 		return -1;
 	}
@@ -45,6 +49,7 @@ int read_command(void)
 int parse_command(void)
 {
 	//cat < test.txt | grep -n public > test2.txt &
+	//空命令直接返回
 	if(check("\n")){
 		return 0;
 	}
@@ -91,48 +96,9 @@ int parse_command(void)
 //成功返回0，失败返回-1
 int execute_command(void)
 {
-	/*
-	   pid_t pid = fork();
-	   if(pid == -1){
-	   ERR_EXIT("fork");
-	   }
+	//先判断是否内部命令
 
-	   int ret;
-	   if(pid == 0){	//child
-	   ret = execvp(cmd.args[0],cmd.args);
-
-	   }
-
-	   wait(NULL);
-	 */
-
-	//ls | grep init | wc -w
-	int i;
-	int fd;
-	int fds[2];
-	for(i=0; i<cmd_count; ++i){
-		//如果不是最后一条命令，则需要创建管道
-		if(i < cmd_count-1){
-			pipe(fds);
-			cmd[i].outfd = fds[1];
-			cmd[i+1].infd = fds[0];
-		}
-		
-		forkexec(&cmd[i]);
-		
-		if((fd = cmd[i].infd) != 0){
-			close(fd);
-		}
-		if((fd = cmd[i].outfd) != 1){
-			close(fd);
-		}
-	}
-	
-
-	while(wait(NULL) != lastpid){
-		;
-	}
-
+	execute_disk_command();
 	return 0;
 
 }
@@ -243,36 +209,5 @@ void getname(char* name)
 		*name++ = *lineptr++;
 	}
 	*name = '\0';
-	
-}
 
-void forkexec(COMMAND *pcmd)
-{
-	int i;
-	pid_t pid;
-	pid = fork();
-	if(pid == -1){
-		ERR_EXIT("fork");
-	}
-
-	if(pid > 0){
-		//parent
-		lastpid = pid;
-	}else if (pid == 0){
-		//child
-		if(pcmd->infd != 0){
-			close(0);
-			dup(pcmd->infd);
-		}
-		if(pcmd->outfd != 1){
-			close(1);
-			dup(pcmd->outfd);
-		}
-
-		for(i = 3; i<256; ++i){
-			close(i);
-		}
-		execvp(pcmd->args[0],pcmd->args);
-		exit(EXIT_FAILURE);
-	}
 }

@@ -20,7 +20,9 @@ int lastpid;
 
 int main(void)
 {
+	//安装信号
 	setup();
+	//进入shell循环
 	shell_loop();
 	return 0;
 }
