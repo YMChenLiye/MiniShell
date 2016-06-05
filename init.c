@@ -21,6 +21,11 @@ void sigint_handler(int signo)
 void init(void)
 {
 	memset(cmd,0,sizeof(cmd));
+	int i;
+	for(i = 0; i<PIPELINE; ++i){
+		cmd[i].infd = 0;
+		cmd[i].outfd = 1;
+	}
 	memset(cmdline,0,sizeof(cmdline));
 	memset(avline,0,sizeof(avline));
 	lineptr = cmdline;
@@ -30,4 +35,5 @@ void init(void)
 	cmd_count = 0;
 	backgnd = 0;
 	append = 0;
+	lastpid = 0;
 }

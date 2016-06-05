@@ -11,7 +11,7 @@ void get_command(int i);
 int check(const char* str);
 void getname(char* name);
 void print_command(void);
-
+void forkexec(COMMAND* pcmd);
 
 //shell主循环
 void shell_loop(void)
@@ -105,6 +105,34 @@ int execute_command(void)
 
 	   wait(NULL);
 	 */
+
+	//ls | grep init | wc -w
+	int i;
+	int fd;
+	int fds[2];
+	for(i=0; i<cmd_count; ++i){
+		//如果不是最后一条命令，则需要创建管道
+		if(i < cmd_count-1){
+			pipe(fds);
+			cmd[i].outfd = fds[1];
+			cmd[i+1].infd = fds[0];
+		}
+		
+		forkexec(&cmd[i]);
+		
+		if((fd = cmd[i].infd) != 0){
+			close(fd);
+		}
+		if((fd = cmd[i].outfd) != 1){
+			close(fd);
+		}
+	}
+	
+
+	while(wait(NULL) != lastpid){
+		;
+	}
+
 	return 0;
 
 }
@@ -216,4 +244,35 @@ void getname(char* name)
 	}
 	*name = '\0';
 	
+}
+
+void forkexec(COMMAND *pcmd)
+{
+	int i;
+	pid_t pid;
+	pid = fork();
+	if(pid == -1){
+		ERR_EXIT("fork");
+	}
+
+	if(pid > 0){
+		//parent
+		lastpid = pid;
+	}else if (pid == 0){
+		//child
+		if(pcmd->infd != 0){
+			close(0);
+			dup(pcmd->infd);
+		}
+		if(pcmd->outfd != 1){
+			close(1);
+			dup(pcmd->outfd);
+		}
+
+		for(i = 3; i<256; ++i){
+			close(i);
+		}
+		execvp(pcmd->args[0],pcmd->args);
+		exit(EXIT_FAILURE);
+	}
 }
