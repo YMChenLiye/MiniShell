@@ -15,6 +15,7 @@ COMMAND cmd[PIPELINE];
 
 int cmd_count;
 int backgnd;
+int append;
 
 int main(void)
 {

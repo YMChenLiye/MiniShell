@@ -10,6 +10,8 @@
 void get_command(int i);
 int check(const char* str);
 void getname(char* name);
+void print_command(void);
+
 
 //shell主循环
 void shell_loop(void)
@@ -22,6 +24,7 @@ void shell_loop(void)
 			break;
 		}
 		parse_command();
+		print_command();
 		execute_command();
 	}
 	printf("\nexit\n");
@@ -42,6 +45,9 @@ int read_command(void)
 int parse_command(void)
 {
 	//cat < test.txt | grep -n public > test2.txt &
+	if(check("\n")){
+		return 0;
+	}
 	//1、解析第一条简单命令
 	get_command(0);
 	//2、判断是否有输入重定向符
@@ -59,6 +65,9 @@ int parse_command(void)
 	}
 	//4、判断是否有输出重定向符
 	if(check(">")){
+		if(check(">")){
+			append = 1;
+		}
 		getname(outfile);
 	}
 	//5、判断是否后台作业
@@ -83,21 +92,43 @@ int parse_command(void)
 int execute_command(void)
 {
 	/*
-	pid_t pid = fork();
-	if(pid == -1){
-		ERR_EXIT("fork");
-	}
+	   pid_t pid = fork();
+	   if(pid == -1){
+	   ERR_EXIT("fork");
+	   }
 
-	int ret;
-	if(pid == 0){	//child
-		ret = execvp(cmd.args[0],cmd.args);
-		
-	}
+	   int ret;
+	   if(pid == 0){	//child
+	   ret = execvp(cmd.args[0],cmd.args);
 
-	wait(NULL);
-	*/
+	   }
+
+	   wait(NULL);
+	 */
 	return 0;
 
+}
+
+void print_command()
+{
+	int i;
+	int j;
+	printf("cmd_count = %d\n",cmd_count);
+	if(infile[0] != '\0'){
+		printf("infile=[%s]\n",infile);
+	}
+	if(outfile[0] != '\0'){
+		printf("outfile=[%s]\n",outfile);
+	}
+
+	for(i = 0; i<cmd_count; ++i){
+		j = 0;
+		while(cmd[i].args[j] != NULL){
+			printf("[%s] ",cmd[i].args[j]);
+			j++;
+		}
+		printf("\n");
+	}
 }
 
 //解析简单命令至cmd[i]
@@ -112,15 +143,21 @@ void get_command(int i)
 		while(*lineptr == ' ' || *lineptr == '\t'){
 			*lineptr++;
 		}
+
+
+		//将第i条命令第j个参数指向avptr
 		cmd[i].args[j] = avptr;
+
+		//提取参数
 		while(*lineptr != '\0' && *lineptr != ' ' && *lineptr != '\t'
 				&& *lineptr != '>' && *lineptr != '<' && *lineptr != '|'
 				&& *lineptr != '&' && *lineptr != '\n'){
+			//参数提取至avptr指针所指向的数组avline
 			*avptr++ = *lineptr++;
 			inword = 1;
 		}
 		*avptr++ = '\0';
-		
+
 		switch(*lineptr){
 			case ' ':
 			case '\t':
@@ -142,12 +179,41 @@ void get_command(int i)
 	}
 
 }
+
+//将lineptr中的字符串与str进行匹配
+//成功返回1，lineptr移过所匹配的字符串
+//失败返回0，lineptr不变
 int check(const char* str)
 {
+	char* p;
+	while(*lineptr == ' ' || *lineptr == '\t'){
+		lineptr++;
+	}
+	p = lineptr;
+	while(*str != '\0' && *str == *p){
+		str++;
+		p++;
+	}
+	if(*str == '\0'){
+		lineptr = p;	//lineptr移过所匹配的字符串
+		return 1;
+	}
 
+	//lineptr保持不变
+	return 0;
 }
 
 void getname(char* name)
 {
+	while(*lineptr == ' ' || *lineptr == '\t'){
+		lineptr++;
+	}
 
+	while(*lineptr != '\0' && *lineptr != ' ' && *lineptr != '\t'
+			&& *lineptr != '>' && *lineptr != '<' && *lineptr != '|'
+			&& *lineptr != '&' && *lineptr != '\n'){
+		*name++ = *lineptr++;
+	}
+	*name = '\0';
+	
 }

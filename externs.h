@@ -12,5 +12,6 @@ extern COMMAND cmd[PIPELINE];
 
 extern int cmd_count;
 extern int backgnd;
+extern int append;
 
 #endif
