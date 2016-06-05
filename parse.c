@@ -2,6 +2,7 @@
 #include "externs.h"
 #include "init.h"
 #include "execute.h"
+#include "builtin.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -9,7 +10,6 @@
 #include <fcntl.h>
 
 void get_command(int i);
-int check(const char* str);
 void getname(char* name);
 void print_command(void);
 
@@ -26,7 +26,7 @@ void shell_loop(void)
 		//解析命令
 		parse_command();
 		//打印命令的状态,debug用的
-		print_command();
+//		print_command();
 		//执行命令
 		execute_command();
 	}
@@ -53,6 +53,13 @@ int parse_command(void)
 	if(check("\n")){
 		return 0;
 	}
+
+	//判断是否内部命令并执行它
+	if(builtin()){
+		return 0;
+	}
+
+
 	//1、解析第一条简单命令
 	get_command(0);
 	//2、判断是否有输入重定向符
@@ -96,8 +103,6 @@ int parse_command(void)
 //成功返回0，失败返回-1
 int execute_command(void)
 {
-	//先判断是否内部命令
-
 	execute_disk_command();
 	return 0;
 
